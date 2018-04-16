@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/kreeve/regexcover.svg?branch=master)](https://travis-ci.org/kreeve/regexcover)
+
 This extends `pytest` to count the percentage of a regex exercised by `re.match` in Python programs. A regular expression match of the form `re.match('a|b', 'a')` should report 50% coverage, but existing coverage tools would report it as 100% coverage.
 
 # Motivation
