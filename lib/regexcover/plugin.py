@@ -4,9 +4,9 @@ from .cover import split_toplevel, num_matches
 from collections import defaultdict
 from unittest import mock
 
+import pytest
 import sre_parse
 import re
-import pytest
 
 
 def pytest_configure(config):
@@ -17,15 +17,17 @@ def pytest_addoption(parser):
     group = parser.getgroup('recov', 'Regular expression coverage.')
     group.addoption('--re-fail-under', action='store',
                     metavar='MIN', type=int,
-                    default=50,
+                    default=0,
+                    dest='re_fail_under',
                     help='Fail if any regular expression\'s coverage is less than MIN.')
     
 class RegexCoverage(object):
-    def __init__(self, options):
+    def __init__(self, config):
         self.covered_clauses = defaultdict(lambda: 0)
         self.total_clauses = {}
         self.original_parse = re.match
-        self.config = options
+        self.config = config
+        self.re_fail_under = self.config.getoption('re_fail_under')
         
     def match(self, pattern, text):
         parsed = sre_parse.parse(pattern)
@@ -46,17 +48,20 @@ class RegexCoverage(object):
         """Write results to console."""
         for pattern, num in self.total_clauses.items():
             num_covered = self.covered_clauses[pattern]
-            kwargs = dict(red=True, green=False)
-            if float(num_covered)/float(num) < self.config.getoption('--re-fail-under'):
-                kwargs = dict(red=False, green=True)
-            terminalreporter.write('\n\nPattern {}, total {} covered {}.\n'\
-                                   .format(pattern, num, num_covered), **kwargs)
+            pct = round(float(num_covered)/float(num)*100)
+            if pct < self.re_fail_under:
+                terminalreporter.write('\n\nFAIL: Pattern {}, total {} covered {}. {} percent.\n'\
+                                       .format(pattern, num, num_covered, pct),
+                                       red=True)
+            else:
+                terminalreporter.write('\n\nPattern {}, total {} covered {}. {} percent.\n'\
+                                .format(pattern, num, num_covered, pct), green=True)
             
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtestloop(self, session):
         yield
-
+        
         for pattern, num in self.total_clauses.items():
             num_covered = self.covered_clauses[pattern]
-            if float(num_covered)/float(num) < self.config.getoption('--re-fail-under'):
+            if float(num_covered)/float(num) < self.re_fail_under:
                 session.testsfailed += 1

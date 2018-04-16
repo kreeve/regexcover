@@ -20,7 +20,7 @@ pytest_plugins = ['regexcover']
 def match_regex_thing(text):
     return re.match('hi|hello|\d+', text)
 
-def test_regex():
+def test_regex(cover_regex):
     match_regex_thing('hello')
 
 
@@ -41,13 +41,13 @@ pytest_plugins = ['regexcover']
 def match_regex_thing(text):
     return re.match('hi|hello|\d+', text)
 
-def test_regex():
+def test_regex(cover_regex):
     match_regex_thing('hello')
 
-def test_hi():
+def test_hi(cover_regex):
     match_regex_thing('hi')
 
-def test_numbers():
+def test_numbers(cover_regex):
     match_regex_thing('125')
 ```
 
